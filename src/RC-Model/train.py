@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from FinalToolModels.models import *
-from FinalToolModels.simulate import *
+from models import *
+from simulate import *
 
 def train_greybox_model(train_df, model_type, bounds, deltaT, solver_name="ipopt", num_trials=20, show_plot=False, log=True):
     
@@ -109,7 +109,6 @@ def train_greybox_model_with_validation_process(train_df, val_df, model_type, bo
     best_params_validation = None
     best_initializatio_training = None
     best_initialization_validation = None
-    best_model_training = None
     best_model_validation = None
     best_trial_index_training = -1
     best_trial_index_validation = -1
@@ -125,14 +124,8 @@ def train_greybox_model_with_validation_process(train_df, val_df, model_type, bo
         try:
             # Train model with this initialization
             model, parameters = build_greybox_model(
-                train_df=train_df,
-                model_type=model_type,
-                deltaT=deltaT,
-                solver_name=solver_name,
-                Tee=False,
-                initialization=init_vals,
-                bounds=bounds,
-                show_plot=show_plot
+                train_df=train_df, model_type=model_type, deltaT=deltaT, solver_name=solver_name,
+                Tee=False, initialization=init_vals, bounds=bounds, show_plot=show_plot
             )
             rmse_training = parameters.get('Objective', np.inf)
             solve_time = solve_time + parameters['Solve_time']
@@ -147,14 +140,11 @@ def train_greybox_model_with_validation_process(train_df, val_df, model_type, bo
                 initialize_validation = {"Tint": model.T_int[last_index](),"Tin": val_df['INDOOR_TEMP'].iloc[0], "Te": model.T_e[last_index]()}
             
             ## Run a validation simulation
-            validation, t_pred, t_true, val_pred = simulate_and_evaluate(
-                val_df=val_df,
-                param_dict=parameters,
-                model_type=model_type,
-                initializations=initialize_validation,
-                show_plot=show_plot
+            validation, val_pred = simulate_and_evaluate(
+                val_df=val_df, param_dict=parameters, model_type=model_type,
+                initializations=initialize_validation, show_plot=show_plot
             )
-
+            
             # In each iteration the result parameters (tuning variables), initial values, RMSE, and the number of trials is save. 
             trial_data = parameters.copy()
             for param in param_names:
@@ -190,7 +180,6 @@ def train_greybox_model_with_validation_process(train_df, val_df, model_type, bo
                 best_rmse_training = rmse_training
                 best_params_training = parameters
                 best_initializatio_training = init_vals
-                best_model_training = model
                 best_trial_index_training = i
             
             if log==True: # When log is enable print in each iteration the RMSE, initial values and tuning parameters.

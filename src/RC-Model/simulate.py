@@ -96,7 +96,6 @@ def simulate_and_evaluate(val_df, param_dict,initializations, model_type="1R1C",
     # Evaluation
     val_df_sim = val_df.copy()
     val_df_sim["T_in_estimate"] = T_in_sim
-    
     if model_type == "2R2C_A":
         val_df_sim["T_e_estimate"] = T_e_sim
     elif model_type == "3R2C":
@@ -122,119 +121,122 @@ def simulate_and_evaluate(val_df, param_dict,initializations, model_type="1R1C",
         plt.tight_layout()
         plt.show()
 
-    return {"RMSE": rmse, "SSE": sse}, y_pred, y_true, val_df_sim
+    return {"RMSE": rmse, "SSE": sse}, val_df_sim
 
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-def simulate_Qh(df, param_dict, initializations, model_type="1R1C", deltaT=1800, show_plot=True):
-    N = len(df)
-    T_out = df["OUTDOOR_TEMP"].values
-    Q_irrad = df["PYRANOMETER"].values
-    T_in = df["INDOOR_TEMP"].values
 
-    T_e = np.zeros(N) if model_type in ["2R2C_A", "3R2C", "4R3C"] else None
-    T_int = np.zeros(N) if model_type in ["3R2C", "4R3C"] else None
+############ Under Development ################
 
-    if T_e is not None:
-        T_e[0] = initializations.get("Te", T_in[0] - 1)
-    if T_int is not None:
-        T_int[0] = initializations.get("Tint", T_in[0])
+# def simulate_Qh(df, param_dict, initializations, model_type="1R1C", deltaT=1800, show_plot=True):
+#     N = len(df)
+#     T_out = df["OUTDOOR_TEMP"].values
+#     Q_irrad = df["PYRANOMETER"].values
+#     T_in = df["INDOOR_TEMP"].values
 
-    # Parameters
-    R_in_a = param_dict.get("R_in_a", 1)
-    R_in_e = param_dict.get("R_in_e", 1)
-    R_e_a = param_dict.get("R_e_a", 1)
-    R_int_in = param_dict.get("R_int_in", 1)
-    C_in = param_dict.get("C_in", 1)
-    C_e = param_dict.get("C_e", 1)
-    C_int = param_dict.get("C_int", 1)
-    Ain = param_dict.get("Ain", 0)
-    Ae = param_dict.get("Ae", 0)
-    Aint = param_dict.get("Aint", 0)
-    fh = param_dict.get("fh", 1)
-    fh_in = param_dict.get("fh_in", 1)
-    fh_e = param_dict.get("fh_e", 0)
-    fh_int = param_dict.get("fh_int", 0)
+#     T_e = np.zeros(N) if model_type in ["2R2C_A", "3R2C", "4R3C"] else None
+#     T_int = np.zeros(N) if model_type in ["3R2C", "4R3C"] else None
 
-    Q_h = np.zeros(N)
+#     if T_e is not None:
+#         T_e[0] = initializations.get("Te", T_in[0] - 1)
+#     if T_int is not None:
+#         T_int[0] = initializations.get("Tint", T_in[0])
 
-    for t in range(N - 1):
-        dT_in = (T_in[t + 1] - T_in[t]) / deltaT
+#     # Parameters
+#     R_in_a = param_dict.get("R_in_a", 1)
+#     R_in_e = param_dict.get("R_in_e", 1)
+#     R_e_a = param_dict.get("R_e_a", 1)
+#     R_int_in = param_dict.get("R_int_in", 1)
+#     C_in = param_dict.get("C_in", 1)
+#     C_e = param_dict.get("C_e", 1)
+#     C_int = param_dict.get("C_int", 1)
+#     Ain = param_dict.get("Ain", 0)
+#     Ae = param_dict.get("Ae", 0)
+#     Aint = param_dict.get("Aint", 0)
+#     fh = param_dict.get("fh", 1)
+#     fh_in = param_dict.get("fh_in", 1)
+#     fh_e = param_dict.get("fh_e", 0)
+#     fh_int = param_dict.get("fh_int", 0)
 
-        if model_type == "1R1C":
-            Q_h[t] = (C_in / fh) * (
-                dT_in -
-                (T_out[t] - T_in[t]) / (R_in_a * C_in) -
-                Ain * Q_irrad[t] / C_in
-            )
+#     Q_h = np.zeros(N)
 
-        elif model_type == "2R2C_A":
-            dT_e = (T_e[t + 1] - T_e[t]) / deltaT if t < N - 2 else 0
-            Q_h[t] = (C_in / fh) * (
-                dT_in -
-                (T_e[t] - T_in[t]) / (R_in_e * C_in) -
-                Ain * Q_irrad[t] / C_in
-            )
-            T_e[t + 1] = T_e[t] + deltaT * (
-                (T_in[t] - T_e[t]) / (R_in_e * C_e) +
-                (T_out[t] - T_e[t]) / (R_e_a * C_e) +
-                (1 - fh) * Q_h[t] / C_e +
-                Ae * Q_irrad[t] / C_e
-            )
+#     for t in range(N - 1):
+#         dT_in = (T_in[t + 1] - T_in[t]) / deltaT
 
-        elif model_type == "3R2C":
-            dT_e = (T_e[t + 1] - T_e[t]) / deltaT if t < N - 2 else 0
-            Q_h[t] = (C_in / fh) * (
-                dT_in -
-                (T_e[t] - T_in[t]) / (R_in_e * C_in) -
-                (T_out[t] - T_in[t]) / (R_in_a * C_in) -
-                Ain * Q_irrad[t] / C_in
-            )
-            T_e[t + 1] = T_e[t] + deltaT * (
-                (T_out[t] - T_e[t]) / (R_e_a * C_e) +
-                (T_in[t] - T_e[t]) / (R_in_e * C_e) +
-                Ae * Q_irrad[t] / C_e +
-                (1 - fh) * Q_h[t] / C_e
-            )
+#         if model_type == "1R1C":
+#             Q_h[t] = (C_in / fh) * (
+#                 dT_in -
+#                 (T_out[t] - T_in[t]) / (R_in_a * C_in) -
+#                 Ain * Q_irrad[t] / C_in
+#             )
 
-        elif model_type == "4R3C":
-            dT_int = (T_int[t + 1] - T_int[t]) / deltaT if t < N - 2 else 0
-            dT_e = (T_e[t + 1] - T_e[t]) / deltaT if t < N - 2 else 0
+#         elif model_type == "2R2C_A":
+#             dT_e = (T_e[t + 1] - T_e[t]) / deltaT if t < N - 2 else 0
+#             Q_h[t] = (C_in / fh) * (
+#                 dT_in -
+#                 (T_e[t] - T_in[t]) / (R_in_e * C_in) -
+#                 Ain * Q_irrad[t] / C_in
+#             )
+#             T_e[t + 1] = T_e[t] + deltaT * (
+#                 (T_in[t] - T_e[t]) / (R_in_e * C_e) +
+#                 (T_out[t] - T_e[t]) / (R_e_a * C_e) +
+#                 (1 - fh) * Q_h[t] / C_e +
+#                 Ae * Q_irrad[t] / C_e
+#             )
 
-            T_int[t + 1] = T_int[t] + deltaT * (
-                (T_in[t] - T_int[t]) / (R_int_in * C_int) +
-                Aint * Q_irrad[t] / C_int +
-                fh_int * Q_h[t] / C_int
-            )
+#         elif model_type == "3R2C":
+#             dT_e = (T_e[t + 1] - T_e[t]) / deltaT if t < N - 2 else 0
+#             Q_h[t] = (C_in / fh) * (
+#                 dT_in -
+#                 (T_e[t] - T_in[t]) / (R_in_e * C_in) -
+#                 (T_out[t] - T_in[t]) / (R_in_a * C_in) -
+#                 Ain * Q_irrad[t] / C_in
+#             )
+#             T_e[t + 1] = T_e[t] + deltaT * (
+#                 (T_out[t] - T_e[t]) / (R_e_a * C_e) +
+#                 (T_in[t] - T_e[t]) / (R_in_e * C_e) +
+#                 Ae * Q_irrad[t] / C_e +
+#                 (1 - fh) * Q_h[t] / C_e
+#             )
 
-            Q_h[t] = (C_in / fh_in) * (
-                dT_in -
-                (T_e[t] - T_in[t]) / (R_in_e * C_in) -
-                (T_out[t] - T_in[t]) / (R_in_a * C_in) -
-                (T_int[t] - T_in[t]) / (R_int_in * C_in) -
-                Ain * Q_irrad[t] / C_in
-            )
+#         elif model_type == "4R3C":
+#             dT_int = (T_int[t + 1] - T_int[t]) / deltaT if t < N - 2 else 0
+#             dT_e = (T_e[t + 1] - T_e[t]) / deltaT if t < N - 2 else 0
 
-            T_e[t + 1] = T_e[t] + deltaT * (
-                (T_out[t] - T_e[t]) / (R_e_a * C_e) +
-                (T_in[t] - T_e[t]) / (R_in_e * C_e) +
-                Ae * Q_irrad[t] / C_e +
-                fh_e * Q_h[t] / C_e
-            )
+#             T_int[t + 1] = T_int[t] + deltaT * (
+#                 (T_in[t] - T_int[t]) / (R_int_in * C_int) +
+#                 Aint * Q_irrad[t] / C_int +
+#                 fh_int * Q_h[t] / C_int
+#             )
 
-    if show_plot:
-        plt.figure(figsize=(10, 5))
-        plt.plot(df.index, Q_h, label="Modeled Phi_h")
-        plt.plot(df.index, df["PHI_H"], label="Measured Phi_h")
-        plt.xlabel("Time")
-        plt.ylabel("Heating Power [W]")
-        plt.title(f"Inferred Phi_h - {model_type}")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+#             Q_h[t] = (C_in / fh_in) * (
+#                 dT_in -
+#                 (T_e[t] - T_in[t]) / (R_in_e * C_in) -
+#                 (T_out[t] - T_in[t]) / (R_in_a * C_in) -
+#                 (T_int[t] - T_in[t]) / (R_int_in * C_in) -
+#                 Ain * Q_irrad[t] / C_in
+#             )
+
+#             T_e[t + 1] = T_e[t] + deltaT * (
+#                 (T_out[t] - T_e[t]) / (R_e_a * C_e) +
+#                 (T_in[t] - T_e[t]) / (R_in_e * C_e) +
+#                 Ae * Q_irrad[t] / C_e +
+#                 fh_e * Q_h[t] / C_e
+#             )
+
+#     if show_plot:
+#         plt.figure(figsize=(10, 5))
+#         plt.plot(df.index, Q_h, label="Modeled Phi_h")
+#         plt.plot(df.index, df["PHI_H"], label="Measured Phi_h")
+#         plt.xlabel("Time")
+#         plt.ylabel("Heating Power [W]")
+#         plt.title(f"Inferred Phi_h - {model_type}")
+#         plt.grid(True)
+#         plt.legend()
+#         plt.tight_layout()
+#         plt.show()
 
 
-    return Q_h
+#     return Q_h
